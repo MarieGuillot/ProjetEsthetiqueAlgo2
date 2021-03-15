@@ -4,6 +4,8 @@
 //  Parameters and UI
 // -------------------
 
+let backgroundTexture: p5.Graphics
+
 let xDessin = 0; 
 let yDessin = 0; 
 let flagBouge = true;
@@ -32,6 +34,31 @@ gui.add(params, "Download_Image")
 // -------------------
 //       Drawing
 // -------------------
+
+// I just moved your code from draw() to here
+// And prefix every function with "backgroundTexture." so that they are applied on the texture and not the screen directly
+
+function generateBackgroundTexture() {
+    // Mise en place du fond cyanotype
+    backgroundTexture.push();
+    backgroundTexture.imageMode(CENTER);
+    backgroundTexture.translate(width/2, height/2);
+    let pivotBackground= int(random(0,100));
+    backgroundTexture.rotate(pivotBackground*(PI/2));
+    backgroundTexture.image(paper, 0, 0, width, height);
+    backgroundTexture.pop();
+
+    // Noise
+    backgroundTexture.blendMode(SOFT_LIGHT)
+    let scale = random(0, 0.02)
+    for (let i = 0; i < width; i++) {
+        for (let j = 0; j < height; j++) {
+            backgroundTexture.stroke(255, map(noise(i * scale, j * scale), 0, 1, 0, 200));
+            backgroundTexture.point(i, j);
+        }
+    }
+    backgroundTexture.blendMode(BLEND)
+}
 
 function gradientLine(Longueur, alpha) {
     let colorStart = color(`rgba(255, 255, 255,${alpha})`);
@@ -215,26 +242,8 @@ function draw() {
     mouseInScreen = (mouseX >-10 && mouseX<width+10 && mouseY>-10 && mouseY<height+10);
     // Initialise la seed
     randomSeed(params.Seed);
-    
-    // Mise en place du fond cyanotype
-    push();
-    imageMode(CENTER);
-    translate(width/2, height/2);
-    let pivotBackground= int(random(0,100));
-    rotate(pivotBackground*(PI/2));
-    image(paper, 0, 0, width, height);
-    pop();
-
-    // Texture ?
-    blendMode(SOFT_LIGHT)
-    let scale = random(0, 0.02)
-    for (let i = 0; i < width; i++) {
-        for (let j = 0; j < height; j++) {
-          stroke(255, map(noise(i * scale, j * scale), 0, 1, 0, 200));
-          point(i, j);
-        }
-    }
-    blendMode(BLEND)
+    // Texture de fond
+    image(backgroundTexture, 0, 0, width, height);
 
     // Emplacement dessin
     bougeDessin();
@@ -258,8 +267,12 @@ function preload() {
 
 function setup() {
     p6_CreateCanvas()
+    backgroundTexture = createGraphics(width, height)
+    generateBackgroundTexture()
 }
 
 function windowResized() {
     p6_ResizeCanvas()
+    backgroundTexture.resizeCanvas(width, height)
+    generateBackgroundTexture()
 }
