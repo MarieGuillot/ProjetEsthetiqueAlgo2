@@ -4,6 +4,9 @@
 //  Parameters and UI
 // -------------------
 
+let noiseShader: p5.Shader;
+let noiseTexture: p5.Graphics;
+
 let xDessin = 0; 
 let yDessin = 0; 
 let flagBouge = true;
@@ -19,6 +22,8 @@ const params = {
     Angle : 0.77,
     PousseArbre : 5,
     tournePlante : 0,
+    NoiseScale : 5,
+    NoiseSeed : 0,
     Download_Image: () => save(),
 }
 gui.add(params, "Seed", 0, 255, 1)
@@ -27,6 +32,8 @@ gui.add(params, "longFleur", -150, 0, 1)
 gui.add(params, "Angle", 0, 1.7, 0.001)
 gui.add(params, "PousseArbre", 0, 12, 1)
 gui.add(params, "tournePlante", -1.6, 1.6, 0.1)
+gui.add(params, "NoiseScale", 0, 15, 0.1)
+gui.add(params, "NoiseSeed", 0, 100, 1)
 gui.add(params, "Download_Image")
 
 // -------------------
@@ -225,16 +232,17 @@ function draw() {
     image(paper, 0, 0, width, height);
     pop();
 
-    // Texture ?
-    blendMode(SOFT_LIGHT)
-    let scale = random(0, 0.02)
-    for (let i = 0; i < width; i++) {
-        for (let j = 0; j < height; j++) {
-          stroke(255, map(noise(i * scale, j * scale), 0, 1, 0, 200));
-          point(i, j);
-        }
-    }
-    blendMode(BLEND)
+    // Draw the noise on a texture
+    noiseTexture.shader(noiseShader);
+    noiseShader.setUniform("uAspectRatio", width/height);
+    noiseShader.setUniform("uNoiseScale", params.NoiseScale);
+    noiseShader.setUniform("uNoiseSeed", params.NoiseSeed);
+    noiseTexture.noStroke();
+    noiseTexture.rect(-width/2, -height/2, width, height);
+    // Apply the noise texture
+    blendMode(SOFT_LIGHT);
+    image(noiseTexture, 0, 0, width, height);
+    blendMode(BLEND);
 
     // Emplacement dessin
     bougeDessin();
@@ -254,12 +262,15 @@ function draw() {
 
 function preload() {
     paper = loadImage("../img/cyanotypePaper.jpg");
+    noiseShader = loadShader("../shader/vertex.vert", "../shader/noise.frag")
 }
 
 function setup() {
     p6_CreateCanvas()
+    noiseTexture = createGraphics(width, height, WEBGL)
 }
 
 function windowResized() {
     p6_ResizeCanvas()
+    noiseTexture.resizeCanvas(width, height)
 }
