@@ -3,6 +3,7 @@
 // -------------------
 //  Parameters and UI
 // -------------------
+
 let noiseShader: p5.Shader;
 let noiseTexture: p5.Graphics;
 
@@ -23,23 +24,47 @@ const params = {
     PousseArbre : 5,
     tournePlante : 0,
     NoiseScale : 1,
-    NoiseSeed : 0,
+    NoiseSeed : 1,
+    iterationsLSystem : 4,
+    changePlante: () => switchPlant(),
     Download_Image: () => save(),
+
 }
 gui.add(params, "Seed", 0, 255, 1)
-gui.add(params, "Long", -150, -1, 1)
+gui.add(params, "Long", -300, -1, 1)
 gui.add(params, "longFleur", -600, 0, 1)
 gui.add(params, "longFeuilles", -600, 0, 1)
-gui.add(params, "Angle", 0, 1.7, 0.001)
+gui.add(params, "Angle", -1.7, 1.7, 0.001)
 gui.add(params, "PousseArbre", 0, 12, 1)
+gui.add(params, "iterationsLSystem", 1, 8, 1)
 gui.add(params, "tournePlante", -1.6, 1.6, 0.1)
-gui.add(params, "NoiseScale", 0, 15, 0.1)
-gui.add(params, "NoiseSeed", 0, 100, 1)
+gui.add(params, "NoiseScale", 0.6, 2.9, 0.1)
+gui.add(params, "NoiseSeed", 0.1, 1, 0.0001)
+gui.add(params, "changePlante")
 gui.add(params, "Download_Image")
 
 // -------------------
-//       Drawing
+//      Fonctions de dessins
 // -------------------
+
+
+// Bouton pour changer de plante
+
+let typePlant = 3;
+
+function switchPlant() {
+  if (typePlant < 3) {
+    typePlant ++;
+    if (typePlant == 2) {axiom = "F"}
+    else {axiom = "X"}
+  } else if (typePlant==3) {
+    typePlant = 0;
+  }
+  choisiExtremite()
+  ruleEnCours = rules[typePlant]
+}
+
+// Ligne de base
 
 function gradientLine(Longueur, alpha) {
     let colorStart = color(`rgba(255, 255, 255,${alpha})`);
@@ -70,17 +95,8 @@ function smallLine (stop) {
         rotate(angle2); 
         smallLine(1)
         smallLine(1)
-        pop() /*
-        if (stop == 3) {
-        push()
-        let angle2 = -dir*params.Angle/(stop*2);
-        rotate(angle2); 
-        smallLine(1)
-        smallLine(1)
         pop() 
-        }*/
     }
-   
 
     let j = 0;
     while (j<2) {
@@ -97,6 +113,8 @@ function smallLine (stop) {
     translate(0,(1/2)*longueurLigne);
     
 }
+
+// Plante 1
 
 function divisePlant (stop, direction) {
     
@@ -135,9 +153,144 @@ function divisePlant (stop, direction) {
     pop();
 }
 
+// Plante 2 L-System
+
+
+var axiom = "X";
+var extremite1 = "G"
+var extremite2 = "E"
+
+var sentence = axiom;
+var len = params.Long;
+var alphaLS = 1;
+
+var ruleFleur = {
+  a: "G",
+  b: "[O]"
+};
+
+var ruleFeuille = {
+    a: "E",
+    b: "[-L]"
+}
+
+var ruleA = []
+//ruleA0 dans choisiExtremite
+ruleA[1] = {
+    a: "F",
+    b: "FF"
+}
+ruleA[2] = ruleFeuille;
+ruleA[3] = ruleFleur;
+
+var ruleB = []
+//ruleB0 dans choisiExtremite
+ruleB[1] = ruleA[1]
+ruleB[2] = ruleA[2]
+ruleB[3] = ruleA[3]
+
+
+var ruleC = []
+ruleC[0]= {
+  a: "X",
+  b: "+FY"
+}
+ruleC[1]= {
+  a: "Y",
+  b: "-FX"
+}
+ruleC[2] = {
+  a: "F",
+  b: "FF-[XY]+[XY]"
+}
+
+
+var rules = []
+rules[0] = ruleA;
+rules[1] = ruleB;
+rules[2] = ruleC;
+
+var ruleEnCours;
+
+function generate() {
+    len *= 0.6;
+    alphaLS *= 0.8;
+    var nextSentence = "";
+    for (var i = 0; i < sentence.length; i++) {
+      var current = sentence.charAt(i);
+      var found = false;
+      for (var j = 0; j < ruleEnCours.length; j++) {
+        if (current == ruleEnCours[j].a) {
+          found = true;
+          nextSentence += ruleEnCours[j].b;
+          break;
+        }
+      }
+      if (!found) {
+        nextSentence += current;
+      }
+    }
+    sentence = nextSentence;
+    
+  }
+
+
+function turtle() {
+  var angleLSystem = params.Angle;
+    for (var i = 0; i < sentence.length; i++) {
+      var current = sentence.charAt(i);
+      
+      if (current == "F") {
+        gradientLine(len, alphaLS); 
+        translate(0, len);
+      } else if (current == "+") {
+        rotate(angleLSystem);
+      } else if (current == "-") {
+        rotate(-angleLSystem)
+      } else if (current == "[") {
+        push();
+      } else if (current == "]") {
+        pop();
+      } else if (current == "O") {
+        fleur();
+      }
+      else if (current == "L") {
+        gradientLine(len, alphaLS); 
+        translate(0, len);
+        feuille();
+      }
+    }
+  }
+
+function choisiExtremite() { // Determine la presence/position des fleurs et feuilles
+  if (random(0,10)<=5) {
+    extremite1 = "G"
+  } else {
+    extremite1 = "E"
+  }
+  if (random(0,10)<5) {
+    extremite2 = "E"
+  } else {
+    extremite2 = "G"
+  }
+
+  ruleA[0] = {
+    a: "X",
+    b: "F[+X"+extremite1+"]F[-X"+extremite2+"]+X"
+  }
+
+  ruleB[0] = {
+    a: "X",
+    b: "F-[[X]+X"+extremite1+"]+F[+FX"+extremite2+"]-X"
+  }
+
+}
+
+// Feuille
+
 function feuille() {
     let longFeuille = params.longFeuilles;
-    let angle = params.Angle*1.2;
+    let angle = radians(20);
     let iMax;
     if (longFeuille<-30) {
     iMax = -longFeuille/5;
@@ -163,6 +316,8 @@ function feuille() {
     }
 
 }
+
+// Fleur
 
 function fleur() {
    let nbPetales = random(20,40);
@@ -196,6 +351,8 @@ function fleur() {
    
 }
 
+// Déplacement de la plante
+
 function bougeDessin() {
 
     noFill();
@@ -221,6 +378,8 @@ function mouseClicked() {
     }
 }
 
+/* Code de Dessin */
+
 function draw() {
     // Détermine si la souris est dans l'ecran
     mouseInScreen = (mouseX >-10 && mouseX<width+10 && mouseY>-10 && mouseY<height+10);
@@ -243,20 +402,45 @@ function draw() {
     noiseShader.setUniform("uNoiseSeed", params.NoiseSeed);
     noiseTexture.noStroke();
     noiseTexture.rect(-width/2, -height/2, width, height);
-    // Apply the noise texture
-    blendMode(SOFT_LIGHT);
-    image(noiseTexture, 0, 0, width, height);
-    blendMode(BLEND);
 
+     // Apply the noise texture
+     blendMode(SOFT_LIGHT);
+     push()
+     imageMode(CENTER);
+     translate(width/2, height/2);
+     let pivotTex= int(random(0,100));
+     rotate(-pivotTex*(PI/2));
+     image(noiseTexture, 0, 0, width, height);
+     pop()
+     blendMode(BLEND);
+   
+    push()
     // Emplacement dessin
     bougeDessin();
     rotate(params.tournePlante);
 
-    // Dessin de la plante
+    // Dessin de la plante 
+    if (typePlant>2) {
     let longueurArbre = params.PousseArbre;
     divisePlant(longueurArbre, 0);
     divisePlant(longueurArbre-1, 1);
+    }
+  
+    //Plante L-system
+    if (typePlant<=2){
+      let iterationLSystem = params.iterationsLSystem;
+      for (let i=0; i<iterationLSystem; i++) {
+        generate();
+      }
+      turtle();
+       // Attention à réinitialiser les valeurs à chaque tour
+      sentence = axiom;
+      len = params.Long;
+      alphaLS = 1;
+    }
     
+    pop()
+
 }
 
 // -------------------
