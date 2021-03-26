@@ -362,7 +362,7 @@ function draw() {
 }
 function preload() {
     paper = loadImage("img/cyanotypePaper.jpg");
-    noiseShader = loadShader("shader/vertex.vert", "../shader/noise.frag");
+    noiseShader = loadShader("shader/vertex.vert", "shader/noise.frag");
 }
 function setup() {
     p6_CreateCanvas();
